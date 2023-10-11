@@ -24,7 +24,7 @@ VALUES
   ('C', '2021-01-07', '3');
  
 
-CREATE OR ALTER TABLE menu (
+CREATE TABLE menu (
   "product_id" INTEGER,
   "product_name" VARCHAR(5),
   "price" INTEGER
