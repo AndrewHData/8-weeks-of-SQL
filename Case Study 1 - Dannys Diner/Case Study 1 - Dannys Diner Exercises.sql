@@ -131,7 +131,7 @@ WHERE order_rank = 1
 
 
 -- 7. Which item was purchased just before the customer became a member?
-
+-- CTE version --
 WITH purchase_order AS
 (
 
@@ -159,5 +159,75 @@ FROM purchase_order
 WHERE order_rank = 1
 ;
 
+-- Temp table version --
+-- Create temp table (with price to use in next question)
+SELECT
+   s.customer_id as [customer],
+   mu.product_name as [item],
+   mu.price as [price],
+   RANK() OVER (PARTITION BY s.customer_id ORDER BY s.order_date DESC) as [order_rank]
+
+INTO #before_membership
+
+FROM sales s
+   JOIN members mb
+      ON s.customer_id = mb.customer_id
+   JOIN menu mu
+      ON s.product_id = mu.product_id
+
+WHERE s.order_date < mb.join_date
+
+-- Select desired columns
+SELECT 
+   customer,
+   item
+
+FROM #before_membership
+
+WHERE order_rank = 1
+;
+
 
 -- 8. What is the total items and amount spent for each member before they became a member?
+-- We can select from the temp table created in previous question
+SELECT
+   customer,
+   item,
+   SUM(price) as [amount_spent]
+
+FROM #before_membership
+
+GROUP BY customer, item
+
+ORDER BY customer ASC
+
+-- Dropping the temp table so it doesn't take up memory
+DROP TABLE #before_membership
+;
+
+
+-- 9.  If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
+
+-- We can build a sub-query for the points
+SELECT
+   s.customer_id as [customer],
+   SUM(
+      mu.price *  (CASE                                     -- price multiplied by 20 or 10 depending on whether the condition of 'sushi' is met
+                  WHEN mu.product_name = 'sushi' 
+                  THEN 20 
+                  ELSE 10 
+                  END 
+               ) 
+   ) as [points]
+
+FROM sales s
+      JOIN menu mu
+         ON s.product_id = mu.product_id
+
+GROUP BY s.customer_id
+
+ORDER BY customer ASC
+;
+
+
+-- 10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - how many points do customer A and B have at the end of January?
