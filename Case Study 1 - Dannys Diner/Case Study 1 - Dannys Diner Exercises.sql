@@ -15,3 +15,149 @@
 
 
 -- 1. What is the total amount each customer spent at the restaurant?
+SELECT
+   s.customer_id as [customer],
+   CAST( SUM(m.price) as MONEY) as [$_amount_spent]
+
+FROM sales s
+   JOIN menu m 
+      ON s.product_id = m.product_id
+
+GROUP BY s.customer_id
+
+
+-- 2. How many days has each customer visited the restaurant?
+SELECT
+   customer_id as [customer],
+   COUNT(DISTINCT(order_date)) as [no_of_days]
+
+FROM sales
+
+GROUP BY customer_id
+
+
+-- 3. What was the first item from the menu purchased by each customer?
+WITH purchase AS
+(
+
+SELECT
+   s.customer_id as [customer],
+   m.product_name as [item],
+   DENSE_RANK() OVER (PARTITION BY s.customer_id ORDER BY s.order_date ASC ) as [item_rank]
+
+FROM sales s
+   JOIN menu m 
+      ON s.product_id = m.product_id
+
+) 
+
+SELECT
+   customer,
+   item as [first_item_ordered]
+
+FROM purchase
+
+WHERE item_rank = 1
+
+-- 4. What is the most purchased item on the menu and how many times was it purchased by all customers?
+SELECT TOP 1
+   m.product_name as [item],
+   COUNT(m.product_name) as [times_purchased]
+
+FROM sales s
+   JOIN menu m 
+      ON s.product_id = m.product_id
+
+GROUP BY m.product_name
+
+ORDER BY times_purchased DESC
+
+
+-- 5. Which item was the most popular for each customer?
+WITH items_purchased AS
+(
+
+SELECT
+   s.customer_id as [customer],
+   m.product_name as [item],
+   COUNT(m.product_name) as [times_purchased],
+   DENSE_RANK() OVER (PARTITION BY s.customer_id ORDER BY (COUNT(m.product_name)) DESC) AS [purchase_rank]
+
+FROM sales s
+   JOIN menu m 
+      ON s.product_id = m.product_id
+
+GROUP BY m.product_name, s.customer_id
+
+)
+
+SELECT
+   customer,
+   item,
+   times_purchased
+
+FROM items_purchased
+
+WHERE purchase_rank = 1
+
+
+-- 6. Which item was purchased first by the customer after they became a member?
+WITH purchase_order AS
+(
+
+SELECT
+   s.customer_id as [customer],
+   mu.product_name as [item],
+   ROW_NUMBER() OVER (PARTITION BY s.customer_id ORDER BY s.order_date ASC) as [order_rank]
+
+FROM sales s
+   JOIN members mb
+      ON s.customer_id = mb.customer_id
+   JOIN menu mu
+      ON s.product_id = mu.product_id
+
+WHERE s.order_date >= mb.join_date
+
+)
+
+SELECT
+   customer,
+   item
+
+FROM purchase_order
+
+WHERE order_rank = 1
+;
+
+
+-- 7. Which item was purchased just before the customer became a member?
+
+WITH purchase_order AS
+(
+
+SELECT
+   s.customer_id as [customer],
+   mu.product_name as [item],
+   ROW_NUMBER() OVER (PARTITION BY s.customer_id ORDER BY s.order_date DESC) as [order_rank]
+
+FROM sales s
+   JOIN members mb
+      ON s.customer_id = mb.customer_id
+   JOIN menu mu
+      ON s.product_id = mu.product_id
+
+WHERE s.order_date < mb.join_date
+
+)
+
+SELECT
+   customer,
+   item
+
+FROM purchase_order
+
+WHERE order_rank = 1
+;
+
+
+-- 8. What is the total items and amount spent for each member before they became a member?
