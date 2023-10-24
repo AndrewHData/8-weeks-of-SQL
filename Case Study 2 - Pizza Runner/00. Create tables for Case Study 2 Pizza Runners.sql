@@ -1,3 +1,10 @@
+-- Execute each one separately
+DROP DATABASE pizza_runner;
+
+CREATE DATABASE pizza_runner;
+
+USE pizza_runner;
+
 DROP TABLE IF EXISTS runners;
 CREATE TABLE runners (
   "runner_id" INTEGER,
