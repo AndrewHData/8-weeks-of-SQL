@@ -172,3 +172,5 @@ GROUP BY FORMAT(order_time, 'dddd'), DATEPART(WEEKDAY,order_time) --Format for t
 
 ORDER BY DATEPART(WEEKDAY,order_time) ASC
 ;
+use pizza_runner
+select * from runner_orders
