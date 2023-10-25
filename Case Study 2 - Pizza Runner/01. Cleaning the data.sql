@@ -105,3 +105,48 @@ FROM  ToppingsCTE
 ;
 -- Test out the  temp table
 Select * from pizza_recipes_cleaned;
+
+---------------------------------------------------------------------------
+/* Updating metadata in the pizza_names table because TEXT datatype doesn't exist on SQL Server */
+
+-- Step 1: Create a new column with a temporary name
+ALTER TABLE pizza_names
+ALTER COLUMN pizza_name_new VARCHAR(255);
+
+-- Step 2: Copy data from the old column to the new column
+-- Example: Changing an INT column to a VARCHAR
+UPDATE pizza_names
+SET pizza_name_new = CAST(pizza_name AS VARCHAR(255));
+
+-- Step 3: Drop the old column 
+ALTER TABLE pizza_names
+DROP COLUMN pizza_name;
+
+-- Step 4: Rename the new column to the original column name
+EXEC sys.sp_rename 'pizza_names.pizza_name_new', 'pizza_name', 'COLUMN';
+
+-- Check the table
+SELECT * FROM pizza_names
+ 
+---------------------------------------------------------------------------
+/* Updating the customer_orders table to change '' and 'null' into NULL */
+
+-- Update the exclusions column
+UPDATE customer_orders
+SET exclusions =    CASE
+                    WHEN exclusions = '' 
+                        OR exclusions = 'null'
+                    THEN NULL
+                    ELSE exclusions
+                    END
+;
+
+-- Update the extras column
+UPDATE customer_orders
+SET extras =    CASE
+                    WHEN extras = '' 
+                        OR extras = 'null'
+                    THEN NULL
+                    ELSE extras
+                    END
+;
