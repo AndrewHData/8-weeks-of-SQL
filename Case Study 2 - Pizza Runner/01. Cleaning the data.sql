@@ -144,9 +144,11 @@ SET exclusions =    CASE
 -- Update the extras column
 UPDATE customer_orders
 SET extras =    CASE
-                    WHEN extras = '' 
-                        OR extras = 'null'
-                    THEN NULL
-                    ELSE extras
-                    END
+                WHEN extras = '' 
+                    OR extras = 'null'
+                THEN NULL
+                ELSE extras
+                END
 ;
+
+---------------------------------------------------------------------------
