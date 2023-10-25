@@ -13,3 +13,20 @@ Pizza Metrics
 */
 
 -- 1. How many pizzas were ordered?
+SELECT 
+    COUNT(*) as [total_pizzas_ordered]
+
+FROM customer_orders
+;
+
+-- 2. How many unique customer orders were made?
+SELECT 
+    COUNT(DISTINCT(order_id)) as [total_orders]
+    
+FROM customer_orders
+;
+
+-- 3. How many successful orders were delivered by each runner?
+SELECT
+    COUNT(*)
+FROM ;
