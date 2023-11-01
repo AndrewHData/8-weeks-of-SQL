@@ -13,12 +13,24 @@ USE pizza_runner;
 
 -- 1. How many runners signed up for each 1 week period? (i.e. week starts 2021-01-01)
 SELECT 
-    [week_starting] = FORMAT(DATEADD(WEEK,DATEDIFF(WEEK,'2021-01-01',registration_date),'2021-01-01'),'yyyy-MM-dd'),
-    [no_of_runners] = COUNT(runner_id)
+    [Week starting] = FORMAT(
+                        DATEADD(WEEK,
+                            DATEDIFF(WEEK,'2021-01-01',registration_date),
+                            '2021-01-01'),
+                            'yyyy-MM-dd'
+                        ),
+    [# of Runners] = COUNT(runner_id)
 
 FROM runners r
 
-GROUP BY DATEADD(WEEK,DATEDIFF(WEEK,'2021-01-01',registration_date),'2021-01-01')
+GROUP BY DATEADD(
+                WEEK, 
+                DATEDIFF(
+                        WEEK,
+                        '2021-01-01',
+                        registration_date
+                        ),
+                '2021-01-01')
 ;
 
 
@@ -37,8 +49,8 @@ FROM customer_orders co
 )
 
 SELECT 
-    poc.runner,
-    ROUND(AVG(poc.pickup_time_mins/60),2) as [avg_pickup_time_mins]
+    poc.runner as [Runner Number],
+    ROUND(AVG(poc.pickup_time_mins/60),2) as [Average Pickup Time (mins)]
 
 FROM pickup_order_cte poc
 
@@ -87,9 +99,9 @@ WITH pizza_cte AS(
     GROUP BY co.order_id, DATEDIFF(MINUTE,order_time,pickup_time)
 )
 SELECT 
-    pc.no_of_pizzas,
-    AVG(time_mins) as [avg_time_per_order_mins],
-    (AVG(time_mins) / PC.no_of_pizzas) as [avg_time_per_pizza_mins]
+    pc.no_of_pizzas as [Number of pizzas],
+    AVG(time_mins) as [Average time per order (mins)],
+    (AVG(time_mins) / PC.no_of_pizzas) as [Average time per pizza (mins)]
 
 FROM pizza_cte pc
 
@@ -100,8 +112,8 @@ GROUP BY pc.no_of_pizzas
 
 -- 4. What was the average distance travelled for each customer?
 SELECT
-    co.customer_id as [customer],
-    ROUND(AVG(rc.distance_km),2) as [avg_travel_distance_km]
+    co.customer_id as [Customer number],
+    ROUND(AVG(rc.distance_km),2) as [Average travel distance (km)]
 
 FROM customer_orders co
     JOIN runner_orders_cleaned rc
@@ -112,6 +124,18 @@ GROUP BY customer_id
 
 
 -- 5. What was the difference between the longest and shortest delivery times for all orders?
+
+-- Sub query version (shorter, nicer, and to the point)
+SELECT 
+    CAST(    
+        (SELECT MAX(rc.duration_mins) FROM runner_orders_cleaned rc) 
+        -
+        (SELECT MIN(rc.duration_mins) FROM runner_orders_cleaned rc) 
+    AS VARCHAR)
+    + ' minutes'    AS [Difference between longest and shortest delivery times]
+;
+
+--CTE version (if you're a masochist)
 WITH max_delivery_time AS 
 (
     SELECT
@@ -135,6 +159,7 @@ SELECT
         + ' minutes' 
     as [Difference between longest and shortest delivery times] 
 ;
+
 
 
 -- 6. What was the average speed for each runner for each delivery and do you notice any trend for these values?
