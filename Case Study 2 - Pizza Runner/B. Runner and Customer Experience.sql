@@ -167,7 +167,13 @@ SELECT
 SELECT
     runner_id as [Runner],
     order_id as [Order #],
-    CAST(ROUND(SUM(distance_km) / SUM(duration_mins) * 60, 2) AS VARCHAR) + ' km/hr' as [Speed]
+    CAST(
+        ROUND(
+            SUM(distance_km) 
+            / 
+            SUM(duration_mins) * 60
+        , 2) 
+        AS VARCHAR) + ' km/hr' as [Speed]
     
 FROM runner_orders_cleaned rc
 
