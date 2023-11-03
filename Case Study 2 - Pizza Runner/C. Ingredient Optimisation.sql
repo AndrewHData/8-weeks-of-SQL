@@ -119,127 +119,17 @@ ORDER BY [Times ordered] DESC
     - Meat Lovers - Exclude Cheese, Bacon - Extra Mushroom, Peppers
 */
 
-/* SYNTAX FOR SPLIT STRING FOR MULTIPLE COLUMNS
+-- Consider creating separate tables for exclusions and extras, then combining the tables via a unique id
 
-SELECT t.id, s.value AS SplitColumn1, s2.value AS SplitColumn2
-FROM YourTable t
-CROSS APPLY STRING_SPLIT(t.Column1, ',') AS s
-CROSS APPLY STRING_SPLIT(t.Column2, ',') AS s2;
-*/
+-- Add unique id to customer orders table for each row and insert into temp table
 
-
--- Step 1: Create a temp table with unique_id for each row
-SELECT 
-    ROW_NUMBER() OVER (ORDER BY order_id) as [unique_id],
-    *
+SELECT
+    ROW_NUMBER() OVER (ORDER BY order_time ASC) as [row_id],
+    * 
 
 INTO #customer_orders
-
 FROM customer_orders;
 
--- Checking the temp table
 select * from #customer_orders;
-
--- Step 2: Start off with splitting the string 
--- *Note* The unique_id and Exclusions will be duplicated for each row.
-SELECT 
-    unique_id,
-    v1.VALUE as [Exclusions],
-    V2.VALUE as [Extras]
-
-FROM #customer_orders co
-CROSS APPLY string_split(co.exclusions, ',') as v1
-CROSS APPLY string_split(co.extras, ',') as v2;
-
-
--- Step 3: Convert the Exclusion and Extras columns into INT type so we can perform sub query (in a similar way to a join, we will reference another table inthe sub-query)
-SELECT 
-    unique_id as [Unique ID],
-    CAST(v1.VALUE AS INT) as [Exclusions],
-    CAST(v2.VALUE AS INT) as [Extras]
-
-FROM #customer_orders co
-CROSS APPLY string_split(co.exclusions, ',') as v1
-CROSS APPLY string_split(co.extras, ',') as v2;
-
-
--- Step 4: Now use sub-query to do the join and insert into another temp table. Don't drop the #customer_orders temp table as we'll be joining it later
-SELECT
-    [Unique ID],
-    Exclusion_name = (SELECT topping_name FROM pizza_toppings pt WHERE coo.Exclusions = pt.topping_id),
-    Extras_name = (SELECT topping_name FROM pizza_toppings pt WHERE coo.Extras = pt.topping_id)
-
-INTO #exc_ext
-
-FROM(
-    SELECT 
-    unique_id as [Unique ID],
-    CAST(v1.VALUE AS INT) as [Exclusions],
-    CAST(v2.VALUE AS INT) as [Extras]
-
-    FROM #customer_orders co
-    CROSS APPLY string_split(co.exclusions, ',') as v1
-    CROSS APPLY string_split(co.extras, ',') as v2
-) coo;
-
-
--- Check the new temp table
-SELECT * FROM #exc_ext;
-
--- Step 4: Put back into comma separated list (many thanks to ChatGPT) and insert new values into ANOTHER temp table. Delete the #exc_ext after.
-SELECT
-    [Unique ID],
-    STUFF(
-            (
-            SELECT DISTINCT
-                ', ' + CAST(Exclusion_name AS VARCHAR)
-            
-            FROM #exc_ext as e2
-            WHERE e1.[Unique ID] = e2.[Unique ID]
-            FOR XML PATH ('')
-        ),
-        1,
-        2,
-        ''
-    ) as [exclusions],
-    STUFF(
-            (
-            SELECT DISTINCT
-                ', ' + CAST(Extras_name AS VARCHAR)
-            
-            FROM #exc_ext as e3
-            WHERE e1.[Unique ID] = e3.[Unique ID]
-            FOR XML PATH ('')
-        ),
-        1,
-        2,
-        ''
-    ) as [extras]
-
-INTO #formatted_exc_ext
-
-FROM (
-    SELECT
-        DISTINCT [Unique ID]
-    FROM #exc_ext
-) e1
-;
-
--- Check to see if the new temp table has the values
-SELECT * FROM #formatted_exc_ext;
-
--- Drop table #exc_ext
-DROP TABLE #exc_ext;
-
--- Step 5: Join the #formatted_exc_ext with the 
-
-
 -- Use this table to check
 select * from pizza_toppings;
-
-
-SELECT
-    u.unique_id,
-    t.topping_name AS exclusion_name
-FROM #customer_orders u
-CROSS APPLY STRING_SPLIT(u.exclusions, ',') AS t;
