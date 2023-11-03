@@ -80,7 +80,7 @@ CREATE TABLE pizza_recipes_cleaned
     pizza_id INT,
     topping_id INT
 )
-
+;
 
 -- Create a CTE to split the toppings into separate rows
 WITH ToppingsCTE AS 
@@ -151,4 +151,8 @@ SET extras =    CASE
                 END
 ;
 
+
+-- Check the customer_orders table
+SELECT * FROM customer_orders
+;
 ---------------------------------------------------------------------------

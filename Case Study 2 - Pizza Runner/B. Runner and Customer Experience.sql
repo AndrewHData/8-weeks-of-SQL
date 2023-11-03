@@ -236,11 +236,4 @@ SELECT
     AS VARCHAR) + '%' as [Delivery success rate]
 
 FROM orders_cte
-
--- selecting from tables
-select * from customer_orders;
-select * from runner_orders_cleaned;
-select * from runners;
-select * from pizza_names;
-select * from pizza_recipes_cleaned;
-select * from pizza_toppings;
+;

@@ -76,7 +76,7 @@ VALUES
 DROP TABLE IF EXISTS pizza_names;
 CREATE TABLE pizza_names (
   "pizza_id" INTEGER,
-  "pizza_name" TEXT
+  "pizza_name" VARCHAR(50)
 );
 INSERT INTO pizza_names
   ("pizza_id", "pizza_name")
@@ -88,7 +88,7 @@ VALUES
 DROP TABLE IF EXISTS pizza_recipes;
 CREATE TABLE pizza_recipes (
   "pizza_id" INTEGER,
-  "toppings" TEXT
+  "toppings" VARCHAR(50)
 );
 INSERT INTO pizza_recipes
   ("pizza_id", "toppings")
@@ -100,7 +100,7 @@ VALUES
 DROP TABLE IF EXISTS pizza_toppings;
 CREATE TABLE pizza_toppings (
   "topping_id" INTEGER,
-  "topping_name" TEXT
+  "topping_name" VARCHAR(200)
 );
 INSERT INTO pizza_toppings
   ("topping_id", "topping_name")
