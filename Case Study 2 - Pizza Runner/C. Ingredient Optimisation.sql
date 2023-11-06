@@ -131,5 +131,224 @@ INTO #customer_orders
 FROM customer_orders;
 
 select * from #customer_orders;
--- Use this table to check
-select * from pizza_toppings;
+
+/* Exclusions */
+
+-- Use split_string on exclusions and create new table for exclusions
+SELECT
+    row_id,
+    order_id,
+    pizza_id,
+    CAST(VALUE as INT) as [exclusions2]
+
+INTO #exc1
+
+FROM #customer_orders
+CROSS APPLY STRING_SPLIT(exclusions, ',');
+
+select * from #exc1;
+
+-- Join to get names of pizzas and their toppings
+SELECT 
+    e.row_id,
+    order_id,
+    n.pizza_name as pizza_name,
+    t.topping_name as exclusions
+
+INTO #exc2
+
+FROM #exc1 e
+    INNER JOIN pizza_names n
+        ON e.pizza_id = n.pizza_id
+    INNER JOIN pizza_toppings t
+        ON e.exclusions2 = t.topping_id;
+
+-- Drop #exc1 temp table. Check temp table #exc2
+DROP TABLE #exc1;
+
+SELECT * FROM #exc2;
+
+-- Concatenate #exc2
+SELECT
+    e1.row_id,
+    e1.order_id,
+    e1.pizza_name,
+    STUFF(
+            (
+            SELECT ', ' + e2.exclusions
+            FROM #exc2 AS e2
+            WHERE e1.row_id = e2.row_id
+            FOR XML PATH('')
+            ), 
+            1,
+            2,
+            ''
+        ) as [exclusion_name]
+
+INTO #exclusions
+
+FROM (
+    SELECT DISTINCT row_id, order_id, pizza_name 
+    FROM #exc2
+) AS e1;
+
+-- Drop the second exclusion temp table #exc2 and check #exclusions
+DROP TABLE #exc2;
+
+-- We'll save the #exclusions temp table for later
+SELECT * FROM #exclusions;
+
+
+/* Extras */
+-- Similar process to extras
+-- Use split_string on exclusions and create new table for exclusions
+SELECT
+    row_id,
+    order_id,
+    pizza_id,
+    CAST(VALUE as INT) as [extras2]
+
+INTO #ext1
+
+FROM #customer_orders
+CROSS APPLY STRING_SPLIT(extras, ',');
+
+select * from #ext1;
+
+-- Join to get names of pizzas and their toppings
+SELECT 
+    e.row_id,
+    e.order_id,
+    n.pizza_name as pizza_name,
+    t.topping_name as exclusions
+
+INTO #ext2
+
+FROM #ext1 e
+    INNER JOIN pizza_names n
+        ON e.pizza_id = n.pizza_id
+    INNER JOIN pizza_toppings t
+        ON e.extras2 = t.topping_id;
+
+-- Drop #ext1 temp table. Check temp table #ext2
+DROP TABLE #ext1;
+
+SELECT * FROM #ext2;
+
+-- Concatenate #ext2
+SELECT
+    e1.row_id,
+    e1.order_id,
+    e1.pizza_name,
+    STUFF(
+            (
+            SELECT ', ' + e2.exclusions
+            FROM #ext2 AS e2
+            WHERE e1.row_id = e2.row_id
+            FOR XML PATH('')
+            ), 
+            1,
+            2,
+            ''
+        ) as [extra_name]
+        
+
+INTO #extras
+
+FROM (
+    SELECT DISTINCT row_id, order_id, pizza_name 
+    FROM #ext2
+) AS e1;
+
+-- Drop the second exclusion temp table #exc2 and check #extras
+DROP TABLE #ext2;
+
+-- The data we want for extras!
+SELECT * FROM #extras;
+
+-- The original #customer_orders table
+SELECT 
+    row_id,
+    order_id,
+    pizza_name,
+    exclusions as exclusion_name,
+    extras as extra_name
+FROM #customer_orders c
+    INNER JOIN pizza_names n
+        ON c.pizza_id = n.pizza_id
+
+WHERE exclusions IS NULL
+    AND extras IS NULL
+;
+
+/*
+Use a full Join with and filter for no nulls on one table's id.
+Then union with the id's that were previously filtered out.
+And also union with the original #customer_orders table above.
+*/
+(
+SELECT 
+    exc.order_id as order_id,
+    [Pizza ordered] =   exc.pizza_name +
+                        CASE 
+                        WHEN exclusion_name IS NOT NULL 
+                            AND extra_name IS NOT NULL
+                        THEN ' - Exclude ' + exclusion_name + ' - Extra ' + extra_name
+                        WHEN exclusion_name IS NULL 
+                        THEN '' 
+                        WHEN exclusion_name IS NOT NULL
+                        THEN ' - Exclude ' + exclusion_name
+                        WHEN extra_name IS NOT NULL
+                        THEN ' - Extra ' + extra_name
+                        ELSE ''
+                        END
+
+FROM #exclusions exc
+    FULL JOIN #extras ext
+        ON exc.row_id = ext.row_id
+WHERE exc.row_id IS NOT NULL
+)
+
+UNION
+
+(
+SELECT
+    ext.order_id as order_id,
+    [Pizza ordered] =   ext.pizza_name +
+                        CASE 
+                        WHEN exclusion_name IS NULL 
+                        THEN '' 
+                        WHEN exclusion_name IS NOT NULL
+                        THEN ' - Exclude ' + exclusion_name
+                        WHEN extra_name IS NULL
+                        THEN ''
+                        WHEN extra_name IS NOT NULL
+                        THEN ' - Extra ' + extra_name
+                        END
+FROM #exclusions exc
+    FULL JOIN #extras ext
+        ON exc.row_id = ext.row_id
+WHERE ext.row_id IS NOT NULL
+)
+
+UNION
+
+(
+-- The original #customer_orders table
+SELECT 
+    order_id,
+    pizza_name as [Pizza ordered]
+FROM #customer_orders c
+    INNER JOIN pizza_names n
+        ON c.pizza_id = n.pizza_id
+WHERE exclusions IS NULL
+    AND extras IS NULL
+)
+
+-- *NB* I could probably add in customer_id or something.
+
+/*
+-- 5. Generate an alphabetically ordered comma separated ingredient list for each pizza order from the customer_orders table and add a 2x in front of any relevant ingredients
+For example: "Meat Lovers: 2xBacon, Beef, ... , Salami"
+*/
+
