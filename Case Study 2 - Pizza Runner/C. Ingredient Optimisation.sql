@@ -21,7 +21,7 @@ USE pizza_runner;
 -- Simple version --
 SELECT
     pn.pizza_name as [Pizza Type],
-    pt.topping_name as [ToppingS]
+    pt.topping_name as [Toppings]
 
 FROM pizza_recipes_cleaned prc
     JOIN pizza_names pn
@@ -34,7 +34,7 @@ FROM pizza_recipes_cleaned prc
 -- Using STUFF and FOR XML PATH to make cross tab as a string list --
 SELECT
     pn.pizza_name as [Pizza Type],
-    ToppingS = STUFF(
+    Toppings = STUFF(
         (
             SELECT 
                 ', ' + CAST(pt.topping_name AS VARCHAR)
@@ -81,6 +81,9 @@ GROUP BY pt.topping_name
 
 ORDER BY [Times ordered] DESC
 ;
+
+select extras from customer_orders;
+
 
 
 /* 3. What was the most common exclusion? */
