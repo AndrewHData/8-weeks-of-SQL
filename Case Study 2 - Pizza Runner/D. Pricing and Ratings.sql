@@ -75,4 +75,60 @@ SELECT
 FROM  ToppingsCTE
 ;
 */
+-- *** Use the below query if the pizza_recipes_cleaned table has not been created *** --
+DROP TABLE IF EXISTS pizza_recipes_cleaned
+CREATE TABLE pizza_recipes_cleaned
+(
+    pizza_id INT,
+    topping_id INT
+)
+;
 
+-- Create a CTE to split the toppings into separate rows
+WITH ToppingsCTE AS 
+(
+    SELECT
+        pizza_id,
+        value
+    FROM
+        pizza_recipes
+    CROSS APPLY STRING_SPLIT(CONVERT(nvarchar(MAX), toppings), ',')
+)
+
+-- Insert the values after the INSERT INTO into a new table
+INSERT INTO pizza_recipes_cleaned
+
+-- Specify what to do with the pizza_id and value from Toppings CTE    
+SELECT
+    pizza_id,
+    CAST(value as INT) AS topping_id
+
+FROM  ToppingsCTE;
+
+-- Check the new table
+select * from pizza_recipes_cleaned;
+
+-- *** Use the above query if the pizza_recipes_cleaned table has not been created *** --
+
+
+
+-- COUNT each row and GROUP BY pizza to join with table in previous question
+WITH sumtoppingscte AS (
+    SELECT
+        pizza_id
+        ,[sum_toppings] = COUNT(*)
+    FROM pizza_recipes_cleaned
+    GROUP BY pizza_id
+)
+
+-- Bring the aggregates of pizza from the previous question
+SELECT
+     [Pizza type] = co.pizza_id
+    ,[Revenue] = (COUNT(*)) * ( CASE WHEN co.pizza_id = 1 THEN 12 ELSE 10 END )
+    ,[sum_toppings]
+
+        
+FROM dbo.customer_orders co
+JOIN sumtoppingscte stc
+    on co.pizza_id = stc.pizza_id
+GROUP BY co.pizza_id, stc.pizza_id;
